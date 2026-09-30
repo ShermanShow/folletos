@@ -731,6 +731,23 @@
       reader.onload = function(ev){
         var image = new Image();
         image.onload = function(){
+          var layout = {};
+          if (targetImg.getAttribute('data-eid') === 'printer-photo') {
+            // La foto nueva define su caja: ajustar a la zona de portada sin recortarla.
+            var aspect = image.naturalWidth / image.naturalHeight;
+            var oldWidth = currentMM(targetImg, 'width');
+            var oldHeight = currentMM(targetImg, 'height');
+            var centerX = currentMM(targetImg, 'left') + oldWidth / 2;
+            var centerY = currentMM(targetImg, 'top') + oldHeight / 2;
+            layout.width = Math.min(190, 80 * aspect);
+            layout.height = layout.width / aspect;
+            layout.left = Math.max(0, Math.min(210 - layout.width, centerX - layout.width / 2));
+            layout.top = Math.max(0, Math.min(297 - layout.height, centerY - layout.height / 2));
+            targetImg.style.width = layout.width + 'mm';
+            targetImg.style.height = layout.height + 'mm';
+            targetImg.style.left = layout.left + 'mm';
+            targetImg.style.top = layout.top + 'mm';
+          }
           var maxSide = 1600;
           var w = image.width, h = image.height;
           if (w > maxSide || h > maxSide) {
@@ -761,10 +778,10 @@
             if (!hasAlpha) {
               var qualities = [0.85, 0.75, 0.65, 0.55];
               for (var q = 0; q < qualities.length && !saved; q++) {
-                saved = setState(eid, { src: makeDataUrl(canvas, false, qualities[q]) });
+                saved = setState(eid, Object.assign({ src: makeDataUrl(canvas, false, qualities[q]) }, layout));
               }
             } else {
-              saved = setState(eid, { src: dataUrl });
+              saved = setState(eid, Object.assign({ src: dataUrl }, layout));
               var scaleDown = 0.75;
               while (!saved && w > 400) {
                 w = Math.round(w * scaleDown);
@@ -773,7 +790,7 @@
                 c2.width = w; c2.height = h;
                 var c2x = c2.getContext('2d');
                 c2x.drawImage(canvas, 0, 0, w, h);
-                saved = setState(eid, { src: c2.toDataURL('image/png') });
+                saved = setState(eid, Object.assign({ src: c2.toDataURL('image/png') }, layout));
               }
             }
             if (!saved) {
