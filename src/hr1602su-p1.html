@@ -551,7 +551,8 @@
       if (!remaining) return done(state);
       imageKeys.forEach(function(eid){
         idbGet(eid, function(src){
-          if (!src || /^https?:/i.test(state[eid].src||'')) { if (!--remaining) done(state); return; }
+          if (!src) { if (!--remaining) done(state); return; }
+          if (!/^data:/i.test(src)) { state[eid].src = src; if (!--remaining) done(state); return; }
           uploadImageRemote(eid,src).then(function(url){ state[eid].src=url; }).catch(function(){}).then(function(){ if (!--remaining) done(state); });
         });
       });
@@ -590,11 +591,19 @@
           if (!remote || !remote.state) return;
           var local = loadState();
           var merged = Object.assign({}, local);
+          var newerLocal = false;
           Object.keys(remote.state).forEach(function(eid){
+            var localTime = Number(local[eid] && local[eid].updatedAt) || 0;
+            var remoteTime = Number(remote.state[eid] && remote.state[eid].updatedAt) || 0;
+            if (localTime > remoteTime) { newerLocal = true; return; }
             merged[eid] = Object.assign({}, local[eid] || {}, remote.state[eid] || {});
+          });
+          Object.keys(local).forEach(function(eid){
+            if (!remote.state[eid] && local[eid] && local[eid].updatedAt) newerLocal = true;
           });
           saveState(merged, false);
           applyState();
+          if (newerLocal) scheduleCloudSync(100);
         }).catch(function(){});
     }
 
@@ -621,7 +630,7 @@
     }
     function setState(eid, patch) {
       var state = loadState();
-      state[eid] = Object.assign({}, state[eid], patch);
+      state[eid] = Object.assign({}, state[eid], patch, { updatedAt: Date.now() });
       return saveState(state);
     }
 

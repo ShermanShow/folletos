@@ -253,6 +253,19 @@
       bitmap.close?.();
     }
   }
+  function fitHeroPhoto(graphic, probe) {
+    if (document.body.dataset.sheet !== 'p1' || graphic.dataset.eid !== 'printer') return;
+    const rect = graphic.getBoundingClientRect(), pageRect = page.getBoundingClientRect();
+    const scale = mmPerPixel(), aspect = probe.naturalWidth / probe.naturalHeight;
+    const oldWidth = rect.width * scale, oldHeight = rect.height * scale;
+    const centerX = (rect.left - pageRect.left) * scale + oldWidth / 2;
+    const centerY = (rect.top - pageRect.top) * scale + oldHeight / 2;
+    const maxWidth = Math.max(5, Math.min(190, 210 - (rect.left - pageRect.left) * scale - 8));
+    const width = Math.min(maxWidth, 90 * aspect), height = width / aspect;
+    graphic.style.width = width + 'mm'; graphic.style.height = height + 'mm';
+    graphic.style.left = Math.max(0, Math.min(210 - width, centerX - width / 2)) + 'mm';
+    graphic.style.top = Math.max(0, Math.min(297 - height, centerY - height / 2)) + 'mm';
+  }
   function upload(graphic) {
     const input = document.createElement('input');
     input.type = 'file'; input.accept = 'image/png,image/jpeg,image/webp,image/gif';
@@ -266,7 +279,7 @@
       const image = icon ? graphic.querySelector('image') : null;
       const previous = icon
         ? {src:image.getAttribute('href'),viewBox:graphic.getAttribute('viewBox'),width:image.getAttribute('width'),height:image.getAttribute('height')}
-        : {src:graphic.src, objectFit:graphic.style.objectFit, objectPosition:graphic.style.objectPosition};
+        : {src:graphic.src, style:graphic.getAttribute('style')};
       const preview = URL.createObjectURL(file);
       let uploaded = false;
       setStatus('Subiendo imagen…');
@@ -280,6 +293,10 @@
           image.setAttribute('height', String(probe.naturalHeight));
           image.setAttribute('href', preview);
         } else {
+          const probe = new Image();
+          probe.src = preview;
+          await probe.decode();
+          fitHeroPhoto(graphic, probe);
           graphic.src = preview;
           graphic.style.objectFit = 'contain';
           graphic.style.objectPosition = 'center center';
@@ -303,8 +320,8 @@
           image.setAttribute('href', previous.src);
         } else {
           graphic.src = previous.src;
-          graphic.style.objectFit = previous.objectFit;
-          graphic.style.objectPosition = previous.objectPosition;
+          if (previous.style === null) graphic.removeAttribute('style');
+          else graphic.setAttribute('style', previous.style);
           setStatus('No se pudo subir la imagen: ' + error.message, true);
         }
         if (!uploaded && icon) setStatus('No se pudo subir la imagen: ' + error.message, true);

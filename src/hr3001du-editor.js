@@ -36,7 +36,11 @@
   function snapshot(el) {
     const entry = state[el.dataset.eid] || {};
     if (el.hasAttribute('data-text')) entry.html = el.innerHTML;
-    if (isImage(el)) entry.src = el.getAttribute('src');
+    if (isImage(el)) {
+      entry.src = el.getAttribute('src');
+      if (el.style.objectFit) entry.objectFit = el.style.objectFit;
+      if (el.style.objectPosition) entry.objectPosition = el.style.objectPosition;
+    }
     if (isIcon(el)) {
       const image = el.querySelector('image');
       entry.src = image.getAttribute('href');
@@ -59,7 +63,13 @@
       const el = byId[id];
       if (!el || !item || typeof item !== 'object') continue;
       if (el.hasAttribute('data-text') && typeof item.html === 'string') el.innerHTML = item.html;
-      if (isImage(el) && safeImageUrl(item.src)) el.src = item.src;
+      if (isImage(el) && safeImageUrl(item.src)) {
+        el.src = item.src;
+        if (item.objectFit === 'contain' || /^\/api\/image\?path=/.test(item.src)) {
+          el.style.objectFit = 'contain';
+          el.style.objectPosition = 'center center';
+        }
+      }
       if (isIcon(el) && safeImageUrl(item.src)) {
         const image = el.querySelector('image');
         image.setAttribute('href', item.src);
@@ -194,6 +204,21 @@
     };
     window.addEventListener('pointermove', move); window.addEventListener('pointerup', up);
   }
+  function fitHeroPhoto(graphic, probe) {
+    if (document.body.dataset.sheet !== 'p1' || !['printer', 'machine'].includes(graphic.dataset.eid)) return;
+    const rect = graphic.getBoundingClientRect(), pageRect = page.getBoundingClientRect();
+    const scale = mmPerPixel(), aspect = probe.naturalWidth / probe.naturalHeight;
+    const oldWidth = rect.width * scale, oldHeight = rect.height * scale;
+    const centerX = (rect.left - pageRect.left) * scale + oldWidth / 2;
+    const centerY = (rect.top - pageRect.top) * scale + oldHeight / 2;
+    const maxHeight = graphic.dataset.eid === 'machine' ? 109 : 90;
+    const maxWidth = Math.max(5, Math.min(190, 210 - (rect.left - pageRect.left) * scale - 8));
+    const width = Math.min(maxWidth, maxHeight * aspect), height = width / aspect;
+    graphic.style.width = width + 'mm'; graphic.style.height = height + 'mm';
+    graphic.style.left = Math.max(0, Math.min(210 - width, centerX - width / 2)) + 'mm';
+    graphic.style.top = Math.max(0, Math.min(297 - height, centerY - height / 2)) + 'mm';
+    graphic.style.objectFit = 'contain'; graphic.style.objectPosition = 'center center';
+  }
   function upload(graphic) {
     const input = document.createElement('input');
     input.type = 'file'; input.accept = 'image/png,image/jpeg,image/webp,image/gif,image/svg+xml';
@@ -203,7 +228,7 @@
       const image = icon ? graphic.querySelector('image') : null;
       const previous = icon
         ? {src:image.getAttribute('href'),viewBox:graphic.getAttribute('viewBox'),width:image.getAttribute('width'),height:image.getAttribute('height')}
-        : {src:graphic.src};
+        : {src:graphic.src, style:graphic.getAttribute('style')};
       const preview = URL.createObjectURL(file);
       setStatus('Subiendo imagen…');
       try {
@@ -215,7 +240,13 @@
           image.setAttribute('width', String(probe.naturalWidth));
           image.setAttribute('height', String(probe.naturalHeight));
           image.setAttribute('href', preview);
-        } else graphic.src = preview;
+        } else {
+          const probe = new Image();
+          probe.src = preview;
+          await probe.decode();
+          fitHeroPhoto(graphic, probe);
+          graphic.src = preview;
+        }
         positionHandles();
         const response = await fetch('/api/image?key=' + encodeURIComponent(key + '_' + graphic.dataset.eid), {method:'PUT',headers:{'Content-Type':file.type},body:file});
         const result = await response.json();
@@ -230,7 +261,11 @@
           image.setAttribute('width', previous.width);
           image.setAttribute('height', previous.height);
           image.setAttribute('href', previous.src);
-        } else graphic.src = previous.src;
+        } else {
+          graphic.src = previous.src;
+          if (previous.style === null) graphic.removeAttribute('style');
+          else graphic.setAttribute('style', previous.style);
+        }
         setStatus('No se pudo subir la imagen: ' + error.message);
       }
       finally { URL.revokeObjectURL(preview); positionHandles(); }
