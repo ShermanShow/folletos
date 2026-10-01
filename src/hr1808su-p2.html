@@ -576,7 +576,8 @@
         if (s.top !== undefined) el.style.top = s.top + 'mm';
         if (s.left !== undefined) el.style.left = s.left + 'mm';
         if (s.width !== undefined) el.style.width = s.width + 'mm';
-        if (s.height !== undefined) el.style.height = s.height + 'mm';
+        if (s.height === null) el.style.height = 'auto';
+        else if (s.height !== undefined) el.style.height = s.height + 'mm';
         if (s.fit === 'contain' && el.tagName === 'IMG') el.style.objectFit = 'contain';
         if (s.fontSize !== undefined) el.style.fontSize = s.fontSize + 'px';
         if (s.src !== undefined) el.src = s.src;
@@ -848,8 +849,7 @@
         function onUp(){
           document.removeEventListener('mousemove', onMove);
           document.removeEventListener('mouseup', onUp);
-          var patch = { width: parseFloat(el.style.width) };
-          if (isMarker) patch.height = parseFloat(el.style.height);
+          var patch = { width: parseFloat(el.style.width), height: isMarker ? parseFloat(el.style.height) : null };
           setState(el.getAttribute('data-eid'), patch);
         }
         document.addEventListener('mousemove', onMove);
@@ -861,8 +861,7 @@
         var currentW = el.getBoundingClientRect().width * mmPerPx();
         var nextW = setSize(currentW + (e.deltaY < 0 ? 3 : -3));
         placeHandle();
-        var patch = { width: nextW };
-        if (isMarker) patch.height = nextW;
+        var patch = { width: nextW, height: isMarker ? nextW : null };
         setState(el.getAttribute('data-eid'), patch);
       }, {passive:false});
     });
@@ -889,7 +888,8 @@
       var currentW = diagramImg.getBoundingClientRect().width * mmPerPx();
       var nextW = Math.max(25, Math.min(205, currentW + delta));
       diagramImg.style.width = nextW + 'mm';
-      setState('diagrama', { width: nextW });
+      diagramImg.style.height = 'auto';
+      setState('diagrama', { width: nextW, height: null });
     }
     document.getElementById('btn-diagram-smaller').addEventListener('click', function(){ resizeDiagram(-5); });
     document.getElementById('btn-diagram-larger').addEventListener('click', function(){ resizeDiagram(5); });
@@ -930,7 +930,7 @@
         if (s.top !== undefined) parts.push('top: ' + s.top.toFixed(1) + 'mm');
         if (s.left !== undefined) parts.push('left: ' + s.left.toFixed(1) + 'mm');
         if (s.width !== undefined) parts.push('width: ' + s.width.toFixed(1) + 'mm');
-        if (s.height !== undefined) parts.push('height: ' + s.height.toFixed(1) + 'mm');
+        if (typeof s.height === 'number') parts.push('height: ' + s.height.toFixed(1) + 'mm');
         if (s.fontSize !== undefined) parts.push('fontSize: ' + s.fontSize.toFixed(1) + 'px');
         if (s.html !== undefined) parts.push('texto: "' + s.html.replace(/\s+/g,' ').trim() + '"');
         if (parts.length) lines.push(eid + ' -> ' + parts.join(', '));
