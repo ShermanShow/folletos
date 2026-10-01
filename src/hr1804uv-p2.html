@@ -145,7 +145,8 @@ html,body { -webkit-print-color-adjust:exact; print-color-adjust:exact; color-ad
     if(!keys.length) return done(state);
     Promise.all(keys.map(function(eid){
       return idbGet(eid).then(function(src){
-        if(!src || /^https?:/i.test(state[eid].src||'')) return;
+        if(!src) return;
+        if(!/^data:/i.test(src)){ state[eid].src=src; return; }
         return uploadImageRemote(eid,src).then(function(url){ state[eid].src=url; }).catch(function(){});
       });
     })).then(function(){ done(state); }).catch(function(){ done(state); });
@@ -171,8 +172,16 @@ html,body { -webkit-print-color-adjust:exact; print-color-adjust:exact; color-ad
       .then(function(remote){
         if(!remote || !remote.state) return;
         var local=loadState(), merged=Object.assign({},local);
-        Object.keys(remote.state).forEach(function(eid){ merged[eid]=Object.assign({},local[eid]||{},remote.state[eid]||{}); });
+        var newerLocal=false;
+        Object.keys(remote.state).forEach(function(eid){
+          var localTime=Number(local[eid]&&local[eid].updatedAt)||0;
+          var remoteTime=Number(remote.state[eid]&&remote.state[eid].updatedAt)||0;
+          if(localTime>remoteTime){newerLocal=true;return;}
+          merged[eid]=Object.assign({},local[eid]||{},remote.state[eid]||{});
+        });
+        Object.keys(local).forEach(function(eid){if(!remote.state[eid]&&local[eid]&&local[eid].updatedAt)newerLocal=true;});
         saveState(merged,false); applyState();
+        if(newerLocal)scheduleCloudSync(100);
       }).catch(function(){});
   }
 
@@ -180,7 +189,7 @@ html,body { -webkit-print-color-adjust:exact; print-color-adjust:exact; color-ad
   // estado localStorage
   function loadState(){ try{ return JSON.parse(localStorage.getItem(STORAGE_KEY)) || {}; }catch(e){ return {}; } }
   function saveState(s, syncCloud){ try{ localStorage.setItem(STORAGE_KEY, JSON.stringify(s)); if(syncCloud !== false) scheduleCloudSync(); return true; }catch(e){ return false; } }
-  function setState(eid, patch){ var s=loadState(); s[eid]=Object.assign({},s[eid],patch); return saveState(s); }
+  function setState(eid, patch){ var s=loadState(); s[eid]=Object.assign({},s[eid],patch,{updatedAt:Date.now()}); return saveState(s); }
 
   // IndexedDB para imágenes
   function idb(){ return new Promise(function(res,rej){ var r=indexedDB.open(IMG_DB,1); r.onupgradeneeded=function(){ r.result.createObjectStore('imgs'); }; r.onsuccess=function(){ res(r.result); }; r.onerror=function(){ rej(r.error); }; }); }
@@ -204,7 +213,7 @@ html,body { -webkit-print-color-adjust:exact; print-color-adjust:exact; color-ad
       if(st.width!==undefined) el.style.width=st.width+'mm';
       if(st.height!==undefined) el.style.height=st.height+'mm';
       if(st.zoom!==undefined) el.style.zoom=st.zoom;
-      if(st.src!==undefined){ var im=el.querySelector('img')||el; im.src=st.src; }
+      if(st.src!==undefined){ var im=el.querySelector('img')||el; im.src=st.src; if(st.fit==='contain') im.style.objectFit='contain'; }
       if(st.html!==undefined) el.innerHTML=st.html;
     });
     Object.keys(s).forEach(function(eid){ var st=s[eid]; if(!st||!st.__img) return; idbGet(eid).then(function(src){ if(src){ var el=document.querySelector('[data-eid="'+eid+'"]'); if(el){ var im=el.querySelector('img')||el; im.src=src; } } }); });
@@ -275,9 +284,9 @@ html,body { -webkit-print-color-adjust:exact; print-color-adjust:exact; color-ad
           dataURL=/png|webp|gif|svg/i.test(f.type||'') ? c.toDataURL('image/png') : c.toDataURL('image/jpeg',0.85);
         }
         var inner=swapTarget.querySelector('img');
-        if(inner){ inner.src=dataURL; } else { swapTarget.src=dataURL; }
+        if(inner){ inner.src=dataURL; inner.style.objectFit='contain'; } else { swapTarget.src=dataURL; swapTarget.style.objectFit='contain'; }
         var eid=swapTarget.getAttribute('data-eid');
-        idbSet(eid,dataURL).then(function(){ setState(eid,{__img:1}); });
+        idbSet(eid,dataURL).then(function(){ setState(eid,{__img:1,fit:'contain'}); });
       };
       img.src=src;
     };

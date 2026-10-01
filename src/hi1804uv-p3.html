@@ -180,7 +180,7 @@
         localStorage.setItem(key,JSON.stringify(mergedC)); localStorage.setItem(styleKey,JSON.stringify(mergedS)); localStorage.setItem(posKey,JSON.stringify(mergedP));
         Object.keys(mergedC).forEach(function(eid){var el=document.querySelector('[data-eid="'+eid+'"].editable');if(el)el.innerHTML=mergedC[eid];});
         Object.keys(mergedS).forEach(function(eid){var el=document.querySelector('[data-eid="'+eid+'"].resizable-title');if(el)el.style.fontSize=mergedS[eid]+'px';});
-        Object.keys(mergedP).forEach(function(eid){var el=document.querySelector('[data-eid="'+eid+'"].p3-drag'),v=mergedP[eid];if(!el)return;if(v.top!==undefined)el.style.top=v.top+'mm';if(v.left!==undefined)el.style.left=v.left+'mm';if(v.width!==undefined)el.style.width=v.width+'mm';if(v.fontSize!==undefined)el.style.fontSize=v.fontSize+'px';});
+        Object.keys(mergedP).forEach(function(eid){var el=document.querySelector('[data-eid="'+eid+'"].p3-drag'),v=mergedP[eid];if(!el)return;if(v.top!==undefined)el.style.top=v.top+'mm';if(v.left!==undefined)el.style.left=v.left+'mm';if(v.width!==undefined)el.style.width=v.width+'mm';if(v.fontSize!==undefined)el.style.fontSize=v.fontSize+'px';var img=el.querySelector('img');if(img&&v.src){img.src=v.src;img.style.objectFit='contain';}});
       }).catch(function(){});
     }
 
@@ -233,6 +233,7 @@
         if(saved2.left!==undefined) el.style.left=saved2.left+'mm';
         if(saved2.width!==undefined){ el.style.width=saved2.width+'mm'; el.style.height='auto'; }
         if(saved2.fontSize!==undefined) el.style.fontSize=saved2.fontSize+'px';
+        if(innerImg && saved2.src){ innerImg.src=saved2.src; innerImg.style.objectFit='contain'; }
       }
       var handle=document.createElement('span');
       handle.className='p3-resize-handle';
@@ -292,6 +293,45 @@
       }
       dragEl=null;
     });
+    var p3ImageInput=document.createElement('input');
+    p3ImageInput.type='file'; p3ImageInput.accept='image/*'; p3ImageInput.style.display='none';
+    document.body.appendChild(p3ImageInput);
+    var p3ImageTarget=null;
+    function swapP3Image(file,target){
+      var eid=target.dataset.eid, image=target.querySelector('img');
+      if(!eid||!image)return;
+      var oldSrc=image.src;
+      var reader=new FileReader();
+      reader.onload=function(){
+        var probe=new Image();
+        probe.onload=function(){
+          var canvas=document.createElement('canvas');
+          var scale=Math.min(1,1600/Math.max(probe.naturalWidth,probe.naturalHeight));
+          canvas.width=Math.max(1,Math.round(probe.naturalWidth*scale));
+          canvas.height=Math.max(1,Math.round(probe.naturalHeight*scale));
+          canvas.getContext('2d').drawImage(probe,0,0,canvas.width,canvas.height);
+          var data=canvas.getContext('2d').getImageData(0,0,canvas.width,canvas.height).data;
+          var alpha=false;for(var i=3;i<data.length;i+=4){if(data[i]<255){alpha=true;break;}}
+          canvas.toBlob(function(blob){
+            if(!blob)return;
+            image.src=URL.createObjectURL(blob); image.style.objectFit='contain';
+            fetch('/api/image?key='+encodeURIComponent(key+'_'+eid),{method:'PUT',headers:{'Content-Type':blob.type},body:blob})
+              .then(function(r){if(!r.ok)throw Error('Image upload failed: '+r.status);return r.json();})
+              .then(function(v){if(!v.url)throw Error('Image URL missing');image.src=v.url;var p=posState();p[eid]=Object.assign({},p[eid],{src:v.url,fit:'contain',updatedAt:Date.now()});savePos(p);})
+              .catch(function(){image.src=oldSrc;alert('No se pudo guardar la imagen. Probá de nuevo.');});
+          },alpha?'image/png':'image/jpeg',0.85);
+        };
+        probe.src=reader.result;
+      };
+      reader.readAsDataURL(file);
+    }
+    document.addEventListener('dblclick',function(e){
+      if(!editing)return;
+      var target=e.target.closest('.p3-img-wrap');
+      if(!target)return;
+      e.preventDefault();e.stopPropagation();p3ImageTarget=target;p3ImageInput.click();
+    },true);
+    p3ImageInput.addEventListener('change',function(){var f=this.files&&this.files[0];this.value='';if(f&&p3ImageTarget)swapP3Image(f,p3ImageTarget);});
     function selectTitle(el){
       document.querySelectorAll('.size-selected').forEach(function(item){item.classList.remove('size-selected');});
       selectedTitle=el; if(el){ el.classList.add('size-selected'); document.getElementById('hint').textContent='Título seleccionado: '+el.textContent.replace(/\s+/g,' ').trim()+'. Usá A− / A+'; }

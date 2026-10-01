@@ -253,15 +253,16 @@
       bitmap.close?.();
     }
   }
-  function fitHeroPhoto(graphic, probe) {
-    if (document.body.dataset.sheet !== 'p1' || graphic.dataset.eid !== 'printer') return;
+  function fitEquipmentPhoto(graphic, probe) {
+    const sheet = document.body.dataset.sheet;
+    if (!((sheet === 'p1' && graphic.dataset.eid === 'printer') || (sheet === 'p2' && graphic.dataset.eid === 'machine'))) return;
     const rect = graphic.getBoundingClientRect(), pageRect = page.getBoundingClientRect();
     const scale = mmPerPixel(), aspect = probe.naturalWidth / probe.naturalHeight;
     const oldWidth = rect.width * scale, oldHeight = rect.height * scale;
     const centerX = (rect.left - pageRect.left) * scale + oldWidth / 2;
     const centerY = (rect.top - pageRect.top) * scale + oldHeight / 2;
     const maxWidth = Math.max(5, Math.min(190, 210 - (rect.left - pageRect.left) * scale - 8));
-    const width = Math.min(maxWidth, 90 * aspect), height = width / aspect;
+    const width = Math.min(maxWidth, (sheet === 'p2' ? 77 : 90) * aspect), height = width / aspect;
     graphic.style.width = width + 'mm'; graphic.style.height = height + 'mm';
     graphic.style.left = Math.max(0, Math.min(210 - width, centerX - width / 2)) + 'mm';
     graphic.style.top = Math.max(0, Math.min(297 - height, centerY - height / 2)) + 'mm';
@@ -296,7 +297,7 @@
           const probe = new Image();
           probe.src = preview;
           await probe.decode();
-          fitHeroPhoto(graphic, probe);
+          fitEquipmentPhoto(graphic, probe);
           graphic.src = preview;
           graphic.style.objectFit = 'contain';
           graphic.style.objectPosition = 'center center';

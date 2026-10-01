@@ -644,6 +644,7 @@
         if (s.left !== undefined) el.style.left = s.left + 'mm';
         if (s.width !== undefined) el.style.width = s.width + 'mm';
         if (s.height !== undefined) el.style.height = s.height + 'mm';
+        if (s.fit === 'contain' && el.tagName === 'IMG') el.style.objectFit = 'contain';
         if (s.fontSize !== undefined) el.style.fontSize = s.fontSize + 'px';
         if (s.src !== undefined) el.src = s.src;
         if (s.html !== undefined) el.innerHTML = s.html;
@@ -740,7 +741,7 @@
       reader.onload = function(ev){
         var image = new Image();
         image.onload = function(){
-          var layout = {};
+          var layout = { fit: 'contain' };
           if (targetImg.getAttribute('data-eid') === 'printer-photo') {
             // La foto nueva define su caja: ajustar a la zona de portada sin recortarla.
             var aspect = image.naturalWidth / image.naturalHeight;
@@ -781,6 +782,7 @@
           var eid = targetImg.getAttribute('data-eid');
           var dataUrl = makeDataUrl(canvas, hasAlpha, 0.85);
           targetImg.src = dataUrl;
+          targetImg.style.objectFit = 'contain';
 
           var saved = false;
           if (eid) {

@@ -473,6 +473,8 @@
     var CLOUD_SYNC_BUSY = false;
     var CLOUD_SYNC_PENDING = false;
     var CLOUD_SYNC_RETRIES = 0;
+    function dataUrlBlob(src) { var p=src.split(','), m=(p[0].match(/:(.*?);/)||[])[1]||'image/jpeg', b=atob(p[1]), a=new Uint8Array(b.length); for(var i=0;i<b.length;i++)a[i]=b.charCodeAt(i); return new Blob([a],{type:m}); }
+    function uploadImageRemote(eid,src) { var mime=((src.match(/^data:([^;]+);/)||[])[1]||'image/jpeg'); return fetch('/api/image?key='+encodeURIComponent(STORAGE_KEY+'_'+eid),{method:'PUT',headers:{'Content-Type':mime},body:dataUrlBlob(src)}).then(function(r){if(!r.ok)throw new Error('Image upload failed: '+r.status);return r.json();}).then(function(v){if(!v.url)throw new Error('Image URL missing');return v.url;}); }
     function cloudSnapshot(done) {
       var state = loadState();
       var imageKeys = Object.keys(state).filter(function(k){ return state[k] && state[k].__img; });
@@ -480,8 +482,9 @@
       if (!remaining) return done(state);
       imageKeys.forEach(function(eid){
         idbGet(eid, function(src){
-          if (src) state[eid].src = src;
-          if (!--remaining) done(state);
+          if (!src) { if (!--remaining) done(state); return; }
+          if (!/^data:/i.test(src)) { state[eid].src = src; if (!--remaining) done(state); return; }
+          uploadImageRemote(eid,src).then(function(url){ state[eid].src=url; }).catch(function(){}).then(function(){ if (!--remaining) done(state); });
         });
       });
     }
@@ -519,12 +522,19 @@
           if (!remote || !remote.state) return;
           var local = loadState();
           var merged = Object.assign({}, local);
+          var newerLocal = false;
           Object.keys(remote.state).forEach(function(eid){
+            var localTime = Number(local[eid] && local[eid].updatedAt) || 0;
+            var remoteTime = Number(remote.state[eid] && remote.state[eid].updatedAt) || 0;
+            if (localTime > remoteTime) { newerLocal = true; return; }
             merged[eid] = Object.assign({}, local[eid] || {}, remote.state[eid] || {});
+          });
+          Object.keys(local).forEach(function(eid){
+            if (!remote.state[eid] && local[eid] && local[eid].updatedAt) newerLocal = true;
           });
           saveState(merged, false);
           applyState();
-          scheduleCloudSync();
+          if (newerLocal) scheduleCloudSync(100);
         }).catch(function(){});
     }
 
@@ -551,7 +561,7 @@
     }
     function setState(eid, patch) {
       var state = loadState();
-      state[eid] = Object.assign({}, state[eid], patch);
+      state[eid] = Object.assign({}, state[eid], patch, { updatedAt: Date.now() });
       return saveState(state);
     }
     function applyState() {
@@ -567,6 +577,7 @@
         if (s.left !== undefined) el.style.left = s.left + 'mm';
         if (s.width !== undefined) el.style.width = s.width + 'mm';
         if (s.height !== undefined) el.style.height = s.height + 'mm';
+        if (s.fit === 'contain' && el.tagName === 'IMG') el.style.objectFit = 'contain';
         if (s.fontSize !== undefined) el.style.fontSize = s.fontSize + 'px';
         if (s.src !== undefined) el.src = s.src;
         if (s.html !== undefined) el.innerHTML = s.html;
@@ -660,6 +671,22 @@
       reader.onload = function(ev){
         var image = new Image();
         image.onload = function(){
+          var layout = { fit: 'contain' };
+          if (targetImg.getAttribute('data-eid') === 'diagrama') {
+            var aspect = image.naturalWidth / image.naturalHeight;
+            var oldWidth = currentMM(targetImg, 'width');
+            var oldHeight = currentMM(targetImg, 'height');
+            var centerX = currentMM(targetImg, 'left') + oldWidth / 2;
+            var centerY = currentMM(targetImg, 'top') + oldHeight / 2;
+            layout.width = Math.min(194, 100 * aspect);
+            layout.height = layout.width / aspect;
+            layout.left = Math.max(0, Math.min(210 - layout.width, centerX - layout.width / 2));
+            layout.top = Math.max(0, Math.min(297 - layout.height, centerY - layout.height / 2));
+            targetImg.style.width = layout.width + 'mm';
+            targetImg.style.height = layout.height + 'mm';
+            targetImg.style.left = layout.left + 'mm';
+            targetImg.style.top = layout.top + 'mm';
+          }
           var maxSide = 1600;
           var w = image.width, h = image.height;
           if (w > maxSide || h > maxSide) {
@@ -683,16 +710,17 @@
           var eid = targetImg.getAttribute('data-eid');
           var dataUrl = makeDataUrl(canvas, hasAlpha, 0.85);
           targetImg.src = dataUrl;
+          targetImg.style.objectFit = 'contain';
 
           var saved = false;
           if (eid) {
             if (!hasAlpha) {
               var qualities = [0.85, 0.75, 0.65, 0.55];
               for (var q = 0; q < qualities.length && !saved; q++) {
-                saved = setState(eid, { src: makeDataUrl(canvas, false, qualities[q]) });
+                saved = setState(eid, Object.assign({ src: makeDataUrl(canvas, false, qualities[q]) }, layout));
               }
             } else {
-              saved = setState(eid, { src: dataUrl });
+              saved = setState(eid, Object.assign({ src: dataUrl }, layout));
               var scaleDown = 0.75;
               while (!saved && w > 400) {
                 w = Math.round(w * scaleDown);
@@ -701,7 +729,7 @@
                 c2.width = w; c2.height = h;
                 var c2x = c2.getContext('2d');
                 c2x.drawImage(canvas, 0, 0, w, h);
-                saved = setState(eid, { src: c2.toDataURL('image/png') });
+                saved = setState(eid, Object.assign({ src: c2.toDataURL('image/png') }, layout));
               }
             }
             if (!saved) {
