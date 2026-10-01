@@ -1,0 +1,15 @@
+services:
+  folletos:
+    build:
+      context: ..
+      dockerfile: vps/Dockerfile
+    container_name: folletos-huenu
+    restart: unless-stopped
+    volumes:
+      - ../data:/app/data
+    labels:
+      - traefik.enable=true
+      - traefik.http.routers.folletos-huenu.rule=Host(`folletos.2-25-196-63.sslip.io`)
+      - traefik.http.routers.folletos-huenu.entrypoints=websecure
+      - traefik.http.routers.folletos-huenu.tls.certresolver=letsencrypt
+      - traefik.http.services.folletos-huenu.loadbalancer.server.port=3000

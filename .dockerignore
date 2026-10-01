@@ -1,0 +1,7 @@
+.git
+**/node_modules
+**/.vercel
+**/.env*
+**/tmp
+qa
+work
