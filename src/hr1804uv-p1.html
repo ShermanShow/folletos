@@ -619,6 +619,8 @@
         if (s.left !== undefined) el.style.left = s.left + 'mm';
         if (s.width !== undefined) el.style.width = s.width + 'mm';
         if (s.height !== undefined) el.style.height = s.height + 'mm';
+        // Foto reemplazada sin alto guardado: al subirla se mostró con su forma real (alto auto); mantenerla así al recargar.
+        else if (s.fit === 'contain' && el.tagName === 'IMG') el.style.height = 'auto';
         if (s.fit === 'contain' && el.tagName === 'IMG') el.style.objectFit = 'contain';
         if (s.fontSize !== undefined) el.style.fontSize = s.fontSize + 'px';
         if (s.src !== undefined) el.src = s.src;
