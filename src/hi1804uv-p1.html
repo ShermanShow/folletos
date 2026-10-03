@@ -580,6 +580,7 @@
           });
           saveState(merged, false);
           applyState();
+          ensureResizeHandles();
           if (newerLocal) scheduleCloudSync(100);
         }).catch(function(){});
     }
@@ -867,15 +868,22 @@
         if (el.classList.contains('editable-pos')) {
           el.setAttribute('contenteditable', 'false');
         }
+        ensureResizeHandles();
       });
     });
 
     // ---- Manijas de resize: ancho (azul, costado) y tamaño de letra (naranja, esquina) ----
     // Independientes entre sí -> se puede agrandar el ancho sin tocar la letra,
     // para que el texto entre en una sola línea si hay lugar.
+    // Se vuelve a llamar después de aplicar los textos guardados en el servidor: al reemplazar el
+    // contenido del texto se pierden las manijas, y sin esto quedaban sin control azul/naranja.
+    function ensureResizeHandles() {
     document.querySelectorAll('.editable-text.editable-pos').forEach(function(el){
+      if (el.querySelector(':scope > .resize-handle-w[data-bound]')) return;
+      el.querySelectorAll(':scope > .resize-handle-w, :scope > .resize-handle-f').forEach(function(h){ h.remove(); });
       var wHandle = document.createElement('span');
       wHandle.className = 'resize-handle-w';
+      wHandle.setAttribute('data-bound', '1');
       el.appendChild(wHandle);
       wHandle.addEventListener('mousedown', function(e){
         e.stopPropagation();
@@ -919,6 +927,8 @@
         document.addEventListener('mouseup', onUp);
       });
     });
+    }
+    ensureResizeHandles();
 
     // ---- Toolbar ----
     var toggleBtn = document.getElementById('btn-toggle-edit');
