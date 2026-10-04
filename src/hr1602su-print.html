@@ -34,7 +34,7 @@
     var sheets=document.getElementById('sheets');
     valid.forEach(function(page){
       var section=document.createElement('section'); section.className='sheet';
-      var frame=document.createElement('iframe'); frame.src='/hr1602su-p'+page+'.html?print=1'; frame.title='Hoja '+page;
+      var frame=document.createElement('iframe'); frame.src='/hr1602su-p'+page+'.html?print=1&pie='+encodeURIComponent(new URLSearchParams(location.search).get('pie')||'huenu'); frame.title='Hoja '+page;
       section.appendChild(frame); sheets.appendChild(section);
     });
     var frames=[].slice.call(document.querySelectorAll('iframe'));

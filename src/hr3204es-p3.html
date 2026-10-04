@@ -354,5 +354,5 @@
     document.getElementById('download').onclick=function(){ document.querySelectorAll('.p3-resize-handle').forEach(function(h){h.remove();}); var html='<!doctype html>\n'+document.documentElement.outerHTML.replace(/<nav class="toolbar">[\s\S]*?<\/nav>/,''); var blob=new Blob([html],{type:'text/html'}); var a=document.createElement('a'); a.href=URL.createObjectURL(blob); a.download='hr3204es-p3.html'; a.click(); URL.revokeObjectURL(a.href); document.querySelectorAll('.p3-drag').forEach(function(el){ var handle=document.createElement('span'); handle.className='p3-resize-handle'; el.appendChild(handle); }); };
   })();
 </script>
-</body>
+<script src="/assets/pie.js"></script></body>
 </html>
