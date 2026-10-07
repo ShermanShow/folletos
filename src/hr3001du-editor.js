@@ -2,6 +2,7 @@
   const page = document.querySelector('.page');
   if (!page) return;
   const model = document.body.dataset.model || 'hr3001du';
+  const relativeLayout = model === 'feria-hr3002dt' || model === 'teneth-fc7090u';
   const key = 'huenu_editor_state_' + model + '_v4_' + document.body.dataset.sheet;
   const status = document.getElementById('edit-status');
   const toggle = document.getElementById('edit-toggle');
@@ -9,7 +10,7 @@
   page.querySelectorAll('svg.icon-crop').forEach((icon, index) => {
     if (!icon.dataset.eid) icon.dataset.eid = 'icon-' + (index + 1);
   });
-  if (model === 'feria-hr3002dt') page.querySelectorAll('[data-eid]').forEach(el => el.setAttribute('data-move', ''));
+  if (relativeLayout) page.querySelectorAll('[data-eid]').forEach(el => el.setAttribute('data-move', ''));
   const elements = [...page.querySelectorAll('[data-eid]')];
   const byId = Object.fromEntries(elements.map(el => [el.dataset.eid, el]));
   let editing = false, selected = null, dirty = false, state = {};
@@ -176,7 +177,7 @@
     const initialLeft = er.left - pr.left, initialTop = er.top - pr.top;
     const x = event.clientX, y = event.clientY;
     const scale = mmPerPixel();
-    const relativeFairItem = model === 'feria-hr3002dt' && !['absolute','fixed'].includes(getComputedStyle(el).position);
+    const relativeFairItem = relativeLayout && !['absolute','fixed'].includes(getComputedStyle(el).position);
     const prior = /translate\(([-\d.]+)mm,\s*([-\d.]+)mm\)/.exec(el.style.transform);
     const priorX = prior ? Number(prior[1]) : 0, priorY = prior ? Number(prior[2]) : 0;
     const move = e => {
@@ -204,7 +205,7 @@
     const font = parseFloat(getComputedStyle(el).fontSize);
     const move = e => {
       const horizontal = e.clientX - x, vertical = e.clientY - y;
-      const delta = kind === 'size' && model === 'feria-hr3002dt' && Math.abs(vertical) > Math.abs(horizontal) ? vertical : horizontal;
+      const delta = kind === 'size' && relativeLayout && Math.abs(vertical) > Math.abs(horizontal) ? vertical : horizontal;
       if (kind === 'width' || isGraphic(el)) {
         const next = Math.max(25, width + delta);
         el.style.width = (next * mmPerPixel()) + 'mm';
