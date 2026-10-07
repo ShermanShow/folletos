@@ -116,6 +116,19 @@
   .card.draft { border-color:#b7dfc0; cursor:pointer; }
   .card.draft:hover { transform:translateY(-2px); box-shadow:0 6px 16px rgba(57,211,34,0.12); }
   .card.draft .status { color:#238a36; }
+  .cat.fair {
+    padding:20px;
+    border:1px solid #b9e9b5;
+    border-radius:16px;
+    background:linear-gradient(135deg, #f1fff0 0%, #fff 55%);
+  }
+  .cat.fair h2 { margin-top:0; font-size:21px; }
+  .fair-intro { margin:0 0 16px 14px; color:#526052; font-size:13px; line-height:1.5; }
+  .fair .card { min-height:104px; }
+  .fair .card .kind { color:#5d725d; font-size:11px; font-weight:600; }
+  .fair .card.pending { opacity:1; background:#f9faf9; border-style:dashed; }
+  .fair .card.pending .model { color:#333; }
+  .fair .card.pending .status { color:#697469; }
   footer {
     text-align:center;
     color:#999;
@@ -138,6 +151,14 @@
   <div class="progress-label">24 de 29 folletos listos</div>
 
   <main>
+
+    <section class="cat fair" id="especial-feria" aria-labelledby="feria-titulo">
+      <h2 id="feria-titulo">Feria · resúmenes técnicos</h2>
+      <p class="fair-intro">12 fichas A4 de una hoja, solo texto técnico y PDF descargable.</p>
+      <div class="grid">
+        <a class="card done" href="/resumenes-feria.html"><span class="model">Ver las 12 fichas</span><span class="status">Abrir, editar o descargar PDF</span></a>
+      </div>
+    </section>
 
     <section class="cat">
       <h2>UV</h2>

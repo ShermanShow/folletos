@@ -9,6 +9,7 @@
   page.querySelectorAll('svg.icon-crop').forEach((icon, index) => {
     if (!icon.dataset.eid) icon.dataset.eid = 'icon-' + (index + 1);
   });
+  if (model === 'feria-hr3002dt') page.querySelectorAll('[data-eid]').forEach(el => el.setAttribute('data-move', ''));
   const elements = [...page.querySelectorAll('[data-eid]')];
   const byId = Object.fromEntries(elements.map(el => [el.dataset.eid, el]));
   let editing = false, selected = null, dirty = false, state = {};
@@ -16,6 +17,8 @@
   const setStatus = message => { if (status) status.textContent = message; };
   const blue = document.createElement('i'), orange = document.createElement('i');
   blue.className = 'edit-handle blue'; orange.className = 'edit-handle orange';
+  blue.title = 'Arrastrar para cambiar el ancho';
+  orange.title = 'Arrastrar hacia un costado o hacia abajo para cambiar el tamaño';
   page.append(blue, orange);
   const isImage = el => el && el.tagName === 'IMG';
   const isIcon = el => el && el.matches('svg.icon-crop');
@@ -40,6 +43,7 @@
       entry.src = el.getAttribute('src');
       if (el.style.objectFit) entry.objectFit = el.style.objectFit;
       if (el.style.objectPosition) entry.objectPosition = el.style.objectPosition;
+      if (el.style.filter) entry.filter = el.style.filter;
     }
     if (isIcon(el)) {
       const image = el.querySelector('image');
@@ -49,7 +53,7 @@
       entry.imageHeight = image.getAttribute('height');
     }
     if (el.hasAttribute('data-move') || el.hasAttribute('data-text') || isIcon(el)) {
-      for (const prop of ['left','top','right','bottom','width','height','fontSize']) {
+      for (const prop of ['left','top','right','bottom','width','height','fontSize','transform']) {
         if (el.style[prop]) entry[prop] = el.style[prop];
       }
     }
@@ -69,6 +73,7 @@
           el.style.objectFit = 'contain';
           el.style.objectPosition = 'center center';
         }
+        if (typeof item.filter === 'string') el.style.filter = item.filter;
       }
       if (isIcon(el) && safeImageUrl(item.src)) {
         const image = el.querySelector('image');
@@ -78,7 +83,7 @@
         if (typeof item.imageHeight === 'string') image.setAttribute('height', item.imageHeight);
       }
       if (el.hasAttribute('data-move') || el.hasAttribute('data-text') || isIcon(el)) {
-        for (const prop of ['left','top','right','bottom','width','height','fontSize']) {
+        for (const prop of ['left','top','right','bottom','width','height','fontSize','transform']) {
           if (typeof item[prop] === 'string') el.style[prop] = item[prop];
         }
       }
@@ -171,7 +176,15 @@
     const initialLeft = er.left - pr.left, initialTop = er.top - pr.top;
     const x = event.clientX, y = event.clientY;
     const scale = mmPerPixel();
+    const relativeFairItem = model === 'feria-hr3002dt' && !['absolute','fixed'].includes(getComputedStyle(el).position);
+    const prior = /translate\(([-\d.]+)mm,\s*([-\d.]+)mm\)/.exec(el.style.transform);
+    const priorX = prior ? Number(prior[1]) : 0, priorY = prior ? Number(prior[2]) : 0;
     const move = e => {
+      if (relativeFairItem) {
+        el.style.transform = `translate(${priorX + (e.clientX - x) * scale}mm, ${priorY + (e.clientY - y) * scale}mm)`;
+        positionHandles();
+        return;
+      }
       el.style.right = 'auto'; el.style.bottom = 'auto';
       el.style.left = ((initialLeft + e.clientX - x) * scale) + 'mm';
       el.style.top = ((initialTop + e.clientY - y) * scale) + 'mm';
@@ -187,10 +200,11 @@
     if (!selected) return;
     event.preventDefault(); event.stopPropagation();
     const el = selected, rect = el.getBoundingClientRect();
-    const x = event.clientX, width = rect.width, height = rect.height;
+    const x = event.clientX, y = event.clientY, width = rect.width, height = rect.height;
     const font = parseFloat(getComputedStyle(el).fontSize);
     const move = e => {
-      const delta = e.clientX - x;
+      const horizontal = e.clientX - x, vertical = e.clientY - y;
+      const delta = kind === 'size' && model === 'feria-hr3002dt' && Math.abs(vertical) > Math.abs(horizontal) ? vertical : horizontal;
       if (kind === 'width' || isGraphic(el)) {
         const next = Math.max(25, width + delta);
         el.style.width = (next * mmPerPixel()) + 'mm';
@@ -248,6 +262,7 @@
           fitEquipmentPhoto(graphic, probe);
           graphic.style.objectFit = 'contain';
           graphic.style.objectPosition = 'center center';
+          if (model === 'feria-hr3002dt') graphic.style.filter = 'none';
           graphic.src = preview;
         }
         positionHandles();

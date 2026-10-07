@@ -1,0 +1,7 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 240 240">
+  <rect width="240" height="240" rx="12" fill="#fff" stroke="#d9e1ec" stroke-width="3"/>
+  <g fill="none" stroke="#071a39" stroke-width="10"><path d="M22 22h56v56H22zM162 22h56v56h-56zM22 162h56v56H22z"/></g>
+  <g fill="#071a39"><path d="M39 39h22v22H39zM179 39h22v22h-22zM39 179h22v22H39z"/></g>
+  <text x="120" y="111" text-anchor="middle" font-family="Arial,sans-serif" font-weight="700" font-size="28" fill="#00d524">QR</text>
+  <text x="120" y="139" text-anchor="middle" font-family="Arial,sans-serif" font-size="15" fill="#071a39">PENDIENTE</text>
+</svg>

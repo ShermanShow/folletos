@@ -1,0 +1,32 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Fichas técnicas para feria</title>
+  <link rel="stylesheet" href="resumen-feria.css">
+</head>
+<body class="catalogo">
+  <header class="topbar"><a href="/">← Catálogo de folletos</a><strong>Fichas técnicas para feria</strong></header>
+  <main class="catalogo-main">
+    <h1>Resúmenes de equipos</h1>
+    <p>Una hoja A4 por equipo, solo con información técnica. Abrí una ficha para editarla o descargá su PDF base.</p>
+    <div id="cards" class="cards"></div>
+  </main>
+  <script src="resumenes-feria-data.js"></script>
+  <script>
+    const cards = document.getElementById('cards');
+    Object.entries(window.expoSummaries).forEach(([id, item]) => {
+      const card = document.createElement('article');
+      card.className = 'catalog-card ' + (item.brand === 'HUENÚ' ? 'huenu' : 'otra');
+      const brand = document.createElement('span'); brand.className = 'brand'; brand.textContent = item.brand;
+      const title = document.createElement('h2'); title.textContent = item.model;
+      const category = document.createElement('p'); category.textContent = item.category;
+      const links = document.createElement('div'); links.className = 'card-links';
+      const open = document.createElement('a'); open.href = 'resumen-feria.html?modelo=' + encodeURIComponent(id); open.textContent = 'Abrir y editar';
+      const pdf = document.createElement('a'); pdf.href = 'pdfs/resumenes-feria/' + id + '.pdf'; pdf.download = 'ficha-' + id + '.pdf'; pdf.textContent = 'PDF base ↓';
+      links.append(open, pdf); card.append(brand, title, category, links); cards.append(card);
+    });
+  </script>
+</body>
+</html>

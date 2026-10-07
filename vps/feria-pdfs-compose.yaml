@@ -1,0 +1,24 @@
+services:
+  feria-pdfs:
+    image: nginx:alpine
+    container_name: feria-pdfs-publicos
+    restart: unless-stopped
+    volumes:
+      - ./files:/usr/share/nginx/html:ro
+    networks:
+      - folletos
+    labels:
+      - traefik.enable=true
+      - traefik.docker.network=vps_default
+      - traefik.http.routers.feria-pdfs.rule=Host(`folletos.2-25-196-63.sslip.io`) && PathPrefix(`/pdfs-publicos/`)
+      - traefik.http.routers.feria-pdfs.entrypoints=websecure
+      - traefik.http.routers.feria-pdfs.priority=100
+      - traefik.http.routers.feria-pdfs.tls.certresolver=letsencrypt
+      - traefik.http.routers.feria-pdfs.middlewares=feria-pdfs-strip
+      - traefik.http.middlewares.feria-pdfs-strip.stripprefix.prefixes=/pdfs-publicos
+      - traefik.http.services.feria-pdfs.loadbalancer.server.port=80
+
+networks:
+  folletos:
+    external: true
+    name: vps_default

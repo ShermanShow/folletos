@@ -1,0 +1,33 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Ficha técnica para feria</title>
+  <link rel="stylesheet" href="resumen-feria.css">
+</head>
+<body class="ficha">
+  <header class="topbar no-print">
+    <a href="resumenes-feria.html">← Todos los equipos</a>
+    <label>Equipo <select id="model-select"></select></label>
+    <div class="actions">
+      <button id="edit-button" type="button">Editar textos</button>
+      <button id="save-button" type="button" hidden>Guardar cambios</button>
+      <button id="print-button" type="button" class="primary">Exportar esta hoja a PDF</button>
+      <a id="base-pdf" download>PDF base ↓</a>
+      <a id="source-link" target="_blank" rel="noopener noreferrer">Fuente técnica ↗</a>
+    </div>
+  </header>
+  <p id="status" class="status no-print" role="status"></p>
+  <main class="a4" id="page">
+    <div class="page-top"><span class="eyebrow">FICHA TÉCNICA · FERIA</span><span class="page-count">01 / 01</span></div>
+    <div class="heading"><p id="brand" class="page-brand"></p><h1 id="model"></h1><p id="category" class="category"></p></div>
+    <section class="intro-section"><h2>El equipo</h2><p id="intro" data-edit="intro"></p></section>
+    <section class="spec-section"><h2>Datos técnicos</h2><dl id="specs"></dl></section>
+    <section class="use-section"><h2>Aplicaciones</h2><p id="use" data-edit="use"></p></section>
+    <footer><span id="footer-brand"></span><span>Resumen técnico · <span id="footer-model"></span></span></footer>
+  </main>
+  <script src="resumenes-feria-data.js"></script>
+  <script src="resumen-feria.js"></script>
+</body>
+</html>
