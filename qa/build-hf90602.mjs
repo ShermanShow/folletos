@@ -41,13 +41,21 @@ for (const suffix of files) {
       '- Vidrio<br>- Acrílico<br>- Madera<br>- Metal<br>- Botellas<br>- Artículos promocionales',
       'application list');
     html = replaceOne(html,
+      'style="top: 13.682mm; left: 30.0207mm; font-size: 14.7px;"',
+      'style="top: 13mm; left: 6mm; width: 98mm; font-size: 11.5px; line-height: 1.25;"',
+      'characteristics first block');
+    html = replaceOne(html,
+      'style="top: 29.3946mm; left: 3.29594mm; width: 35.7607mm; font-size: 15.95px;"',
+      'style="top: 43mm; left: 6mm; width: 98mm; font-size: 11.5px; line-height: 1.25;"',
+      'characteristics second block');
+    html = replaceOne(html,
       'La <b>HUENÚ</b> <span class=hl>HF90602</span> es una impresora cama plana compacta diseñada para personalizar objetos, envases y productos rígidos. De 90 × 60 cm y su altura regulable de hasta 500 mm permiten trabajar con piezas de diferentes formatos y espesores.',
       'La <b>HUENÚ</b> <span class=hl>HF90602</span> es una impresora UV de cama plana para personalizar objetos y materiales rígidos. Su área de 900 × 600 mm y altura de hasta 500 mm permiten trabajar con piezas de diferentes formatos.',
       'intro');
     const photo = /<img class="printer-photo editable-pos img-swap" data-eid="printer-photo"[^>]*>/;
     if (!photo.test(html)) throw new Error('Missing original product photo');
     html = html.replace(photo, `<img class="printer-photo editable-pos img-swap" data-eid="printer-photo" src="${assetData('hf90602-hero.jpg')}" alt="Impresora UV plana Huenú HF90602" style="top:68mm;left:53mm;width:104mm;height:104mm;object-fit:contain;mix-blend-mode:multiply">`);
-    html = replaceOne(html, '</style>', '.intro-heading{top:173mm!important}.intro-text{top:173mm!important}.apps-box,.diff-box{top:197mm!important}\n.diff-box [data-eid="diff-label-1"]{top:13mm!important;left:6mm!important;width:98mm!important;font-size:11.5px!important;line-height:1.25!important}\n.diff-box [data-eid="diff-label-2"]{top:43mm!important;left:6mm!important;width:98mm!important;font-size:11.5px!important;line-height:1.25!important}\n</style>', 'page-one-layout');
+    html = replaceOne(html, '</style>', '.intro-heading{top:173mm!important}.intro-text{top:173mm!important}.apps-box,.diff-box{top:197mm!important}\n</style>', 'page-one-layout');
   }
 
   if (suffix === '-p2') {
