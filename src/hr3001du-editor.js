@@ -2,7 +2,7 @@
   const page = document.querySelector('.page');
   if (!page) return;
   const model = document.body.dataset.model || 'hr3001du';
-  const relativeLayout = model === 'feria-hr3002dt' || model === 'teneth-fc7090u';
+  const relativeLayout = model === 'feria-hr3002dt' || model.startsWith('teneth-');
   const key = 'huenu_editor_state_' + model + '_v4_' + document.body.dataset.sheet;
   const status = document.getElementById('edit-status');
   const toggle = document.getElementById('edit-toggle');
